@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% block title %}Detail Perhitungan Entropy{% endblock %}
+{% block content %}
+<div class="card">
+  {% if student %}
+  <h2>🧮 Detail Perhitungan untuk {{ student.name }}</h2>
+  <p>Hasil perhitungan entropy dan proses decision tree untuk siswa <strong>{{ student.name }}</strong>.</p>
+  {% else %}
+  <h2>🧮 Detail Perhitungan Decision Tree & Entropy</h2>
+  <p>Masukkan data nilai siswa untuk melihat perhitungan entropy dan proses decision tree secara detail.</p>
+  {% endif %}
+  
+  {% if not model_ready %}
+    <div class="alert error">
+      <strong>Model belum dilatih!</strong> Silakan latih model terlebih dahulu di halaman <a href="{% url 'train_model' %}">Analisa Metode</a>.
+    </div>
+  {% else %}
+    
+    <!-- Form Input -->
+    {% if not student %}
+    <div class="input-section">
+      <h3>📝 Input Data Siswa</h3>
+      <form method="post" class="calculation-form">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="nilai_mtk">Nilai Matematika:</label>
+            <input type="number" id="nilai_mtk" name="nilai_mtk" min="0" max="100" step="0.1" required
+                   value="{{ request.POST.nilai_mtk|default:'' }}" placeholder="0-100">
+          </div>
+          
+          <div class="form-group">
+            <label for="nilai_bindo">Nilai Bahasa Indonesia:</label>
+            <input type="number" id="nilai_bindo" name="nilai_bindo" min="0" max="100" step="0.1" required
+                   value="{{ request.POST.nilai_bindo|default:'' }}" placeholder="0-100">
+          </div>
+          
+          <div class="form-group">
+            <label for="nilai_bing">Nilai Bahasa Inggris:</label>
+            <input type="number" id="nilai_bing" name="nilai_bing" min="0" max="100" step="0.1" required
+                   value="{{ request.POST.nilai_bing|default:'' }}" placeholder="0-100">
+          </div>
+          
+          <div class="form-group">
+            <label for="nilai_ipa">Nilai IPA:</label>
+            <input type="number" id="nilai_ipa" name="nilai_ipa" min="0" max="100" step="0.1" required
+                   value="{{ request.POST.nilai_ipa|default:'' }}" placeholder="0-100">
+          </div>
+          
+          <div class="form-group">
+            <label for="minat">Minat:</label>
+            <select id="minat" name="minat" required>
+              {% for choice in minat_choices %}
+                <option value="{{ choice }}" {% if request.POST.minat == choice %}selected{% endif %}>{{ choice }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">🔍 Hitung Entropy & Prediksi</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- Hasil Perhitungan -->
+    {% if calculation_result %}
+    <div class="results-section">
+      <h3>📊 Hasil Perhitungan</h3>
+      
+      <!-- Data Input -->
+      <div class="input-summary">
+        <h4>Data Input:</h4>
+        <div class="input-grid">
+          <div class="input-item">
+            <span class="label">Matematika:</span>
+            <span class="value">{{ calculation_result.input_values.nilai_mtk }}</span>
+          </div>
+          <div class="input-item">
+            <span class="label">B. Indonesia:</span>
+            <span class="value">{{ calculation_result.input_values.nilai_bindo }}</span>
+          </div>
+          <div class="input-item">
+            <span class="label">B. Inggris:</span>
+            <span class="value">{{ calculation_result.input_values.nilai_bing }}</span>
+          </div>
+          <div class="input-item">
+            <span class="label">IPA:</span>
+            <span class="value">{{ calculation_result.input_values.nilai_ipa }}</span>
+          </div>
+          <div class="input-item">
+            <span class="label">Minat:</span>
+            <span class="value">{{ calculation_result.input_values.minat }}</span>
+          </div>
+          <div class="input-item">
+            <span class="label">Rata-rata:</span>
+            <span class="value">{{ calculation_result.input_values.avg_score|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prediksi -->
+      <div class="prediction-result">
+        <h4>🎯 Hasil Prediksi:</h4>
+        <div class="prediction-card {{ calculation_result.prediction|lower }}">
+          <div class="prediction-main">{{ calculation_result.prediction }}</div>
+          <div class="prediction-prob">Confidence: {{ calculation_result.probability|floatformat:4 }} ({{ calculation_result.probability_percent|floatformat:1 }}%)</div>
+        </div>
+        
+        <div class="probability-breakdown">
+          <h5>Breakdown Probabilitas:</h5>
+          {% for class, prob_data in calculation_result.probabilities_detailed.items %}
+          <div class="prob-item">
+            <span class="prob-class">{{ class }}:</span>
+            <span class="prob-value">{{ prob_data.value|floatformat:4 }} ({{ prob_data.percent|floatformat:1 }}%)</span>
+            <div class="prob-bar">
+              <div class="prob-fill" data-width="{{ prob_data.percent }}"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Perhitungan Entropy -->
+      <div class="entropy-calculations">
+        <h4>📈 Perhitungan Entropy</h4>
+        
+        <div class="entropy-grid">
+          <div class="entropy-card">
+            <h5>Entropy Total Dataset</h5>
+            <div class="entropy-value">{{ calculation_result.total_entropy|floatformat:4 }}</div>
+            <div class="entropy-desc">
+              Entropy dari keseluruhan {{ calculation_result.total_data_count }} data training
+              <br>
+              <small>
+                - AKUNTANSI: {{ calculation_result.dataset_stats.akuntansi_count }} data<br>
+                - PERKANTORAN: {{ calculation_result.dataset_stats.perkantoran_count }} data
+              </small>
+            </div>
+          </div>
+          
+          <div class="entropy-card">
+            <h5>Entropy untuk Minat "{{ calculation_result.input_values.minat }}"</h5>
+            <div class="entropy-value">{{ calculation_result.minat_entropy|floatformat:4 }}</div>
+            <div class="entropy-desc">
+              Entropy dari {{ calculation_result.same_minat_count }} data dengan minat yang sama
+              <br>
+              <small>Semakin rendah entropy, semakin homogen kelompoknya</small>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Information Gain -->
+        <div class="info-gain-section">
+          <h5>Information Gain setiap Feature</h5>
+          <div class="info-gain-list">
+            {% for feature, gain_data in calculation_result.information_gains_detailed.items %}
+            <div class="info-gain-item">
+              <span class="feature-name">
+                {% if feature == 'nilai_mtk' %}Nilai Matematika
+                {% elif feature == 'nilai_bindo' %}Nilai B. Indonesia
+                {% elif feature == 'nilai_bing' %}Nilai B. Inggris
+                {% elif feature == 'nilai_ipa' %}Nilai IPA
+                {% elif feature == 'minat' %}Minat
+                {% else %}{{ feature }}
+                {% endif %}:
+              </span>
+              <span class="gain-value">{{ gain_data.value|floatformat:4 }}</span>
+              <div class="gain-bar">
+                <div class="gain-fill" data-width="{{ gain_data.percent }}"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <p class="info-gain-note">
+            <strong>Information Gain</strong> menunjukkan seberapa baik suatu feature dalam memisahkan data. 
+            Semakin tinggi nilainya, semakin baik feature tersebut untuk splitting di Decision Tree.
+          </p>
+        </div>
+      </div>
+
+      <!-- Interpretasi -->
+      <div class="interpretation">
+        <h4>💡 Interpretasi Hasil</h4>
+        <div class="interpretation-content">
+          <p><strong>Berdasarkan perhitungan:</strong></p>
+          <ul>
+            <li>Sistem memprediksi siswa ini cocok untuk jurusan <strong>{{ calculation_result.prediction }}</strong></li>
+            <li>Confidence level: {{ calculation_result.probability_percent|floatformat:1 }}%</li>
+            <li>Rata-rata nilai: {{ calculation_result.input_values.avg_score|floatformat:2 }}</li>
+            <li>Minat "{{ calculation_result.input_values.minat }}" memiliki entropy {{ calculation_result.minat_entropy|floatformat:4 }}</li>
+            {% if calculation_result.minat_entropy < 0.5 %}
+            <li>🟢 Entropy minat rendah - kelompok minat cukup homogen untuk prediksi</li>
+            {% elif calculation_result.minat_entropy < 1.0 %}
+            <li>🟡 Entropy minat sedang - kelompok minat cukup beragam</li>
+            {% else %}
+            <li>🔴 Entropy minat tinggi - kelompok minat sangat beragam</li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+      
+      <!-- Tombol Simpan Hasil -->
+      {% if student %}
+      <div class="save-section">
+        <form method="post" style="text-align: center; margin-top: 2rem;">
+          {% csrf_token %}
+          <input type="hidden" name="save_prediction" value="1">
+          <button type="submit" class="btn btn-success btn-large">
+            💾 Simpan Hasil Prediksi
+          </button>
+          <p class="save-note">Hasil prediksi akan disimpan dan dapat dilihat di halaman <a href="{% url 'results' %}">Hasil Prediksi</a></p>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  {% endif %}
+</div>
+
+<style>
+/* ===== High-Contrast Light Theme Overrides (khusus halaman ini) ===== */
+
+/* Paksa teks jadi gelap & hapus efek opacity dari tema lain */
+.results-section, .calculation-form, .input-summary,
+.prediction-result, .prediction-card, .entropy-calculations,
+.entropy-card, .interpretation, .save-section, .info-gain-section,
+.input-item, .prob-item, .info-gain-item, .card {
+  color: #0f172a !important;   /* teks utama */
+  opacity: 1 !important;
+}
+
+/* Kartu & kontainer terang */
+.card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+}
+.input-summary,
+.entropy-calculations,
+.save-section {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+}
+
+/* Heading tebal & jelas */
+h2, h3, h4, h5 {
+  color: #0f172a !important;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+h4 { font-size: 1.15rem; }
+h5 { font-size: 1.05rem; color: #334155 !important; }
+
+/* Label & teks sekunder */
+.form-group label,
+.input-item .label,
+.entropy-desc,
+.info-gain-note,
+.prediction-prob,
+.save-note {
+  color: #334155 !important;   /* slate-700 */
+}
+
+/* Teks nilai & angka penting */
+.input-item .value { color: #0b63d1 !important; font-weight: 700; } /* biru tegas */
+.entropy-value { color: #0ea5a5 !important; font-size: 2rem; font-weight: 900; } /* teal */
+
+/* Form terang */
+.calculation-form {
+  background: #f8fafc !important;
+  padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;
+}
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; }
+.form-group input, .form-group select {
+  background:#fff; color:#0f172a !important;
+  border:1px solid #cbd5e1; border-radius: 10px; padding: .7rem .9rem;
+}
+.form-group input:focus, .form-group select:focus {
+  outline:none; border-color:#0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.2);
+}
+
+/* Tombol */
+.btn-primary {
+  background:#0d6efd !important; color:#fff !important; border:none;
+  padding:.7rem 1.2rem; border-radius:10px; font-weight:800; cursor:pointer;
+}
+.btn-primary:hover { filter:brightness(.95); box-shadow:0 6px 14px rgba(13,110,253,.25); }
+.btn-success {
+  background:#22c55e !important; color:#fff !important; border:none;
+  padding:1rem 2rem; border-radius:12px; font-weight:800;
+}
+.btn-success:hover { filter:brightness(.95); box-shadow:0 6px 14px rgba(34,197,94,.25); }
+.btn-large { font-size:1.1rem; }
+
+/* Ringkasan input */
+.input-summary { padding:1rem; }
+.input-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:.5rem; margin-top:.5rem; }
+.input-item { display:flex; justify-content:space-between; padding:.25rem; }
+
+/* Panel prediksi – kontras tinggi */
+.prediction-card {
+  padding:1.25rem; border-radius:12px; text-align:center; margin:1rem 0;
+  color:#0f172a !important;
+}
+.prediction-card.akuntansi {
+  background:#ecfdf5 !important; border:2px solid #22c55e !important;
+}
+.prediction-card.perkantoran {
+  background:#fff7ed !important; border:2px solid #f59e0b !important;
+}
+.prediction-main { font-size:1.6rem; font-weight:900; letter-spacing:.3px; }
+.prediction-card.akuntansi .prediction-main { color:#14532d !important; }
+.prediction-card.perkantoran .prediction-main { color:#92400e !important; }
+.prediction-prob { font-size:1rem; }
+
+/* Breakdown probabilitas */
+.probability-breakdown { margin:1rem 0; }
+.prob-item { display:flex; align-items:center; gap:1rem; margin:.5rem 0; }
+.prob-class { font-weight:800; min-width:120px; }
+.prob-value { min-width:110px; font-variant-numeric: tabular-nums; }
+.prob-bar { flex:1; height:16px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+.prob-fill { height:100%; background: linear-gradient(90deg, #0d6efd, #5aa9ff); }
+
+/* Entropy & information gain */
+.entropy-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:1rem; margin:1rem 0; }
+.entropy-card {
+  background:#fff; border:1px solid #e2e8f0; border-left:4px solid #0ea5a5;
+  border-radius:12px; padding:1rem; box-shadow:0 2px 6px rgba(2,8,23,.06);
+}
+.info-gain-item { display:flex; align-items:center; gap:1rem; margin:.6rem 0; }
+.feature-name { font-weight:800; min-width:150px; }
+.gain-value { min-width:90px; font-family:"Courier New", monospace; }
+.gain-bar { flex:1; height:14px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+.gain-fill { height:100%; background: linear-gradient(90deg, #22c55e, #86efac); }
+
+/* Interpretasi – latar hijau lembut & teks tegas */
+.interpretation {
+  background:#ecfdf5 !important; border-left:4px solid #22c55e !important;
+  padding:1.25rem; border-radius:12px; color:#064e3b !important;
+}
+.interpretation strong { color:#064e3b !important; }
+.interpretation-content li { margin:.45rem 0; }
+
+/* Responsif */
+@media (max-width:768px){
+  .form-grid{ grid-template-columns:1fr; }
+  .entropy-grid{ grid-template-columns:1fr; }
+  .prob-item, .info-gain-item{ flex-direction:column; align-items:flex-start; gap:.5rem; }
+  .prob-bar, .gain-bar{ width:100%; }
+}
+</style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Set width for probability bars
+  document.querySelectorAll('.prob-fill').forEach(function(element) {
+    const width = element.getAttribute('data-width');
+    if (width) {
+      element.style.width = width + '%';
+    }
+  });
+  
+  // Set width for information gain bars
+  document.querySelectorAll('.gain-fill').forEach(function(element) {
+    const width = element.getAttribute('data-width');
+    if (width) {
+      element.style.width = width + '%';
+    }
+  });
+});
+</script>
+{% endblock %}

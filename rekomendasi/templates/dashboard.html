@@ -1,0 +1,19 @@
+
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<section class="grid-3">
+  <div class="stat"><div class="stat-num">{{ student_count }}</div><div class="stat-label">Data Siswa</div></div>
+  <div class="stat"><div class="stat-num">{{ prediction_count }}</div><div class="stat-label">Prediksi</div></div>
+  <div class="stat"><div class="stat-num">{% if model_ready %}✅{% else %}❌{% endif %}</div><div class="stat-label">Model Siap</div></div>
+</section>
+<div class="card">
+  <h2>Alur Sistem</h2>
+  <ol>
+    <li>Admin mengelola Data Siswa (nilai MTK, B. Indo, B. Ing, IPA, dan Minat).</li>
+    <li>Unggah dataset Excel (2 sheet) lalu <em>Latih Model</em> Decision Tree.</li>
+    <li>Lakukan prediksi jurusan untuk siswa, hasil tersimpan di menu <em>Hasil</em>.</li>
+    <li>Cetak/ekspor dari halaman hasil (gunakan fitur browser untuk cetak PDF).</li>
+  </ol>
+</div>
+{% endblock %}

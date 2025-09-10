@@ -1,0 +1,37 @@
+
+{% extends 'base.html' %}
+{% block title %}Data Siswa{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="flex between">
+    <h2>Data Siswa</h2>
+    <a class="btn" href="{% url 'student_create' %}">+ Tambah</a>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Nama</th><th>MTK</th><th>B.Indo</th><th>B.Ing</th><th>IPA</th><th>Minat</th><th>Prediksi</th><th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in students %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td>{{ s.nilai_mtk }}</td>
+        <td>{{ s.nilai_bindo }}</td>
+        <td>{{ s.nilai_bing }}</td>
+        <td>{{ s.nilai_ipa }}</td>
+        <td>{{ s.minat }}</td>
+        <td><a class="btn small" href="{% url 'predict_for_student' s.id %}">Prediksi</a></td>
+        <td>
+          <a class="link" href="{% url 'student_edit' s.id %}">Edit</a> ·
+          <a class="link danger" href="{% url 'student_delete' s.id %}">Hapus</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8">Belum ada data siswa.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

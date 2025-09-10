@@ -1,0 +1,20 @@
+
+{% extends 'base.html' %}
+{% block title %}Login • SMK Yaspi{% endblock %}
+{% block content %}
+<div class="card" style="max-width:420px;margin:60px auto;">
+  <h2>Masuk</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-row">
+      <label>Username</label>
+      <input type="text" name="username" required autofocus />
+    </div>
+    <div class="form-row">
+      <label>Password</label>
+      <input type="password" name="password" required />
+    </div>
+    <button class="btn">Login</button>
+  </form>
+</div>
+{% endblock %}

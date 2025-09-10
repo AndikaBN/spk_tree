@@ -1,0 +1,20 @@
+
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>{{ title }}</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid-2">
+      <div class="form-row">{{ form.name.label_tag }} {{ form.name }}</div>
+      <div class="form-row">{{ form.nilai_mtk.label_tag }} {{ form.nilai_mtk }}</div>
+      <div class="form-row">{{ form.nilai_bindo.label_tag }} {{ form.nilai_bindo }}</div>
+      <div class="form-row">{{ form.nilai_bing.label_tag }} {{ form.nilai_bing }}</div>
+      <div class="form-row">{{ form.nilai_ipa.label_tag }} {{ form.nilai_ipa }}</div>
+      <div class="form-row">{{ form.minat.label_tag }} {{ form.minat }}</div>
+    </div>
+    <button class="btn">Simpan</button>
+  </form>
+</div>
+{% endblock %}
