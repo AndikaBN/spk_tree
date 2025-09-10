@@ -1,0 +1,569 @@
+{% extends 'base.html' %}
+{% block title %}Pohon Keputusan - {{ student.name }}{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>🌳 Pohon Keputusan untuk {{ student.name }}</h2>
+  <p>Visualisasi alur pengambilan keputusan untuk prediksi jurusan <strong>{{ prediction_result }}</strong></p>
+  
+  <div class="prediction-summary">
+    <div class="prediction-card {{ prediction_result|lower }}">
+      <div class="prediction-main">{{ prediction_result }}</div>
+      <div class="prediction-prob">Confidence: {{ confidence|floatformat:2 }}%</div>
+    </div>
+  </div>
+
+  <div class="tree-container">
+    <h3>📊 Pohon Keputusan Decision Tree</h3>
+    <div class="decision-tree">
+      
+      <!-- Root Node -->
+      <div class="tree-level">
+        <div class="tree-node root-node">
+          <div class="node-content">
+            <h4>🎯 Mulai Analisis</h4>
+            <div class="node-data">
+              <div class="data-item">{{ student.name }}</div>
+              <div class="data-item">Rata-rata: <strong>{{ avg_score|floatformat:1 }}</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 1: Average Score Decision -->
+      <div class="tree-branches">
+        <div class="branch-container">
+          <!-- Left Branch -->
+          <div class="branch-path">
+            <div class="branch-line"></div>
+            <div class="tree-node branch-node">
+              <div class="node-content">
+                <h5>Rata-rata < 75</h5>
+                <div class="branch-result">Cenderung PERKANTORAN</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Selected Branch (thick line) -->
+          <div class="branch-path selected-path">
+            <div class="branch-line selected-line"></div>
+            <div class="tree-node branch-node selected-node">
+              <div class="node-content">
+                <h5>Rata-rata ≥ {{ avg_score|floatformat:1 }}</h5>
+                <div class="branch-result">Lanjut Analisis</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Branch -->
+          <div class="branch-path">
+            <div class="branch-line"></div>
+            <div class="tree-node branch-node">
+              <div class="node-content">
+                <h5>Rata-rata ≥ 85</h5>
+                <div class="branch-result">Analisis Mendalam</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 2: Subject Analysis -->
+      <div class="tree-branches">
+        <div class="branch-container">
+          <!-- Matematika Branch -->
+          <div class="branch-path {% if student.nilai_mtk >= 80 %}selected-path{% endif %}">
+            <div class="branch-line {% if student.nilai_mtk >= 80 %}selected-line{% endif %}"></div>
+            <div class="tree-node branch-node {% if student.nilai_mtk >= 80 %}selected-node{% endif %}">
+              <div class="node-content">
+                <h5>MTK ≥ 80</h5>
+                <div class="branch-condition">{{ student.nilai_mtk }} ≥ 80</div>
+                <div class="branch-result">→ AKUNTANSI</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Bahasa Branch -->
+          <div class="branch-path {% if student.nilai_bindo >= 75 and student.nilai_mtk < 80 %}selected-path{% endif %}">
+            <div class="branch-line {% if student.nilai_bindo >= 75 and student.nilai_mtk < 80 %}selected-line{% endif %}"></div>
+            <div class="tree-node branch-node {% if student.nilai_bindo >= 75 and student.nilai_mtk < 80 %}selected-node{% endif %}">
+              <div class="node-content">
+                <h5>B.Indo ≥ 75</h5>
+                <div class="branch-condition">{{ student.nilai_bindo }} ≥ 75</div>
+                <div class="branch-result">→ PERKANTORAN</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Default Branch -->
+          <div class="branch-path {% if student.nilai_mtk < 80 and student.nilai_bindo < 75 %}selected-path{% endif %}">
+            <div class="branch-line {% if student.nilai_mtk < 80 and student.nilai_bindo < 75 %}selected-line{% endif %}"></div>
+            <div class="tree-node branch-node {% if student.nilai_mtk < 80 and student.nilai_bindo < 75 %}selected-node{% endif %}">
+              <div class="node-content">
+                <h5>Nilai Seimbang</h5>
+                <div class="branch-condition">Cek Minat</div>
+                <div class="branch-result">Lanjut</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Level 3: Interest Analysis -->
+      <div class="tree-branches">
+        <div class="branch-container">
+          {% for minat_option in minat_options %}
+          <div class="branch-path {% if student.minat == minat_option.name %}selected-path{% endif %}">
+            <div class="branch-line {% if student.minat == minat_option.name %}selected-line{% endif %}"></div>
+            <div class="tree-node branch-node {% if student.minat == minat_option.name %}selected-node{% endif %}">
+              <div class="node-content">
+                <h5>{{ minat_option.name }}</h5>
+                <div class="branch-result">→ {{ minat_option.target }}</div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Final Result -->
+      <div class="tree-level">
+        <div class="final-connector">
+          <div class="final-line"></div>
+        </div>
+        <div class="tree-node final-node {{ prediction_result|lower }}">
+          <div class="node-content">
+            <h4>🎓 Hasil Keputusan</h4>
+            <div class="final-prediction">{{ prediction_result }}</div>
+            <div class="confidence-score">Confidence: {{ confidence|floatformat:1 }}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Importance -->
+  <div class="feature-importance">
+    <h3>📈 Pentingnya Fitur dalam Keputusan</h3>
+    <div class="importance-list">
+      {% for feature in feature_importance %}
+      <div class="importance-item">
+        <div class="feature-name">{{ feature.name }}</div>
+        <div class="importance-bar">
+          <div class="importance-fill" style="width: {{ feature.importance_percent }}%"></div>
+        </div>
+        <div class="importance-value">{{ feature.importance|floatformat:3 }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <a href="{% url 'predict_for_student' student.id %}" class="btn btn-primary">
+      ⬅️ Kembali ke Perhitungan
+    </a>
+    <form method="post" style="display: inline;">
+      {% csrf_token %}
+      <input type="hidden" name="save_prediction" value="1">
+      <button type="submit" class="btn btn-success">
+        💾 Simpan Hasil Prediksi
+      </button>
+    </form>
+    <a href="{% url 'students_list' %}" class="btn">
+      📋 Lihat Data Siswa
+    </a>
+  </div>
+
+</div>
+
+<style>
+/* Decision Tree Styles */
+.prediction-summary {
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.tree-container {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  margin: 2rem 0;
+  overflow-x: auto;
+}
+
+.decision-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  min-width: 800px;
+}
+
+/* Tree Levels */
+.tree-level {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.tree-branches {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.branch-container {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  position: relative;
+}
+
+/* Tree Nodes */
+.tree-node {
+  background: white;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 180px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  position: relative;
+  z-index: 2;
+}
+
+.root-node {
+  border-color: #495057;
+  border-width: 3px;
+  background: #e9ecef;
+  min-width: 220px;
+}
+
+.branch-node {
+  border-color: #6c757d;
+  background: #f8f9fa;
+  min-width: 160px;
+}
+
+.selected-node {
+  border-color: #007bff !important;
+  border-width: 3px !important;
+  background: #e3f2fd !important;
+  box-shadow: 0 6px 16px rgba(0,123,255,0.3) !important;
+  transform: scale(1.05);
+}
+
+.final-node {
+  border-width: 4px;
+  min-width: 250px;
+  transform: scale(1.1);
+}
+
+.final-node.akuntansi {
+  border-color: #28a745;
+  background: #d4edda;
+}
+
+.final-node.perkantoran {
+  border-color: #ffc107;
+  background: #fff3cd;
+}
+
+/* Branch Lines */
+.branch-path {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.branch-line {
+  width: 3px;
+  height: 40px;
+  background: #6c757d;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.branch-line::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 10px solid #6c757d;
+}
+
+.selected-line {
+  width: 6px !important;
+  background: #007bff !important;
+  box-shadow: 0 0 10px rgba(0,123,255,0.5);
+  animation: pulse 2s infinite;
+}
+
+.selected-line::after {
+  border-top-color: #007bff !important;
+  border-left-width: 8px;
+  border-right-width: 8px;
+  border-top-width: 12px;
+}
+
+/* Final Connector */
+.final-connector {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.final-line {
+  width: 6px;
+  height: 50px;
+  background: linear-gradient(to bottom, #007bff, #28a745);
+  border-radius: 3px;
+  position: relative;
+  animation: pulse 2s infinite;
+}
+
+.final-line::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid #28a745;
+}
+
+/* Node Content */
+.node-content h4,
+.node-content h5 {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.node-content h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.node-data {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.data-item {
+  color: #495057;
+}
+
+.branch-condition {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
+.branch-result {
+  font-weight: 600;
+  color: #007bff;
+  font-size: 0.9rem;
+}
+
+.final-prediction {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #495057;
+  margin: 0.5rem 0;
+}
+
+.confidence-score {
+  font-size: 1rem;
+  color: #28a745;
+  font-weight: 600;
+}
+
+/* Feature Importance */
+.feature-importance {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+  margin: 2rem 0;
+}
+
+.importance-list {
+  margin: 1rem 0;
+}
+
+.importance-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.feature-name {
+  font-weight: 600;
+  min-width: 150px;
+  color: #495057;
+}
+
+.importance-bar {
+  flex: 1;
+  height: 20px;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.importance-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745, #20c997);
+  transition: width 0.5s ease;
+}
+
+.importance-value {
+  min-width: 80px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 2rem 0;
+}
+
+.action-buttons .btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Animations */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0,123,255,0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0,123,255,0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0,123,255,0);
+  }
+}
+
+.tree-node {
+  animation: fadeInUp 0.8s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .tree-container {
+    padding: 1rem;
+  }
+  
+  .decision-tree {
+    min-width: 600px;
+  }
+  
+  .branch-container {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .tree-node {
+    min-width: 140px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .decision-tree {
+    min-width: 400px;
+  }
+  
+  .tree-node {
+    min-width: 120px;
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .importance-item {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  
+  .importance-bar {
+    width: 100%;
+  }
+}
+
+/* Branch Connecting Lines */
+.branch-container::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: #6c757d;
+  z-index: 1;
+}
+
+.branch-container::after {
+  content: '';
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 30px;
+  background: #6c757d;
+  z-index: 1;
+}
+</style>
+{% endblock %}

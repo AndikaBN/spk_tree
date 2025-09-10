@@ -199,17 +199,15 @@
         </div>
       </div>
       
-      <!-- Tombol Simpan Hasil -->
+      <!-- Tombol Lihat Pohon Keputusan -->
       {% if student %}
       <div class="save-section">
-        <form method="post" style="text-align: center; margin-top: 2rem;">
-          {% csrf_token %}
-          <input type="hidden" name="save_prediction" value="1">
-          <button type="submit" class="btn btn-success btn-large">
-            💾 Simpan Hasil Prediksi
-          </button>
-          <p class="save-note">Hasil prediksi akan disimpan dan dapat dilihat di halaman <a href="{% url 'results' %}">Hasil Prediksi</a></p>
-        </form>
+        <div style="text-align: center; margin-top: 2rem;">
+          <a href="{% url 'decision_tree_view' student.id %}" class="btn btn-success btn-large">
+            🌳 Lihat Pohon Keputusan
+          </a>
+          <p class="save-note">Lihat visualisasi pohon keputusan dan alasan prediksi untuk siswa ini</p>
+        </div>
       </div>
       {% endif %}
     </div>

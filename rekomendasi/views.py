@@ -171,3 +171,214 @@ def custom_logout(request):
         logout(request)
         messages.success(request, f"Anda telah berhasil logout. Sampai jumpa, {username}!")
     return redirect('login')
+
+@login_required
+def decision_tree_view(request, student_id):
+    """View untuk menampilkan visualisasi pohon keputusan"""
+    student = get_object_or_404(Student, id=student_id)
+    
+    # Check if model exists
+    if not Path(MODEL_PATH).exists():
+        messages.error(request, "Model belum dilatih! Silakan latih model terlebih dahulu.")
+        return redirect('train_model')
+    
+    # Handle save prediction
+    if request.method == 'POST' and request.POST.get('save_prediction'):
+        try:
+            # Get prediction
+            prediction, probability, _ = predict_single(
+                student.nilai_mtk, student.nilai_bindo, 
+                student.nilai_bing, student.nilai_ipa, student.minat
+            )
+            
+            # Save prediction
+            Prediction.objects.create(
+                student=student,
+                jurusan_prediksi=prediction,
+                probability=probability
+            )
+            
+            messages.success(request, f"Hasil prediksi untuk {student.name} berhasil disimpan!")
+            return redirect('results')
+            
+        except Exception as e:
+            messages.error(request, f"Gagal menyimpan prediksi: {str(e)}")
+    
+    try:
+        # Get prediction result
+        prediction, probability, probabilities = predict_single(
+            student.nilai_mtk, student.nilai_bindo, 
+            student.nilai_bing, student.nilai_ipa, student.minat
+        )
+        
+        # Calculate average score
+        avg_score = (student.nilai_mtk + student.nilai_bindo + 
+                    student.nilai_bing + student.nilai_ipa) / 4
+        
+        # Generate decision steps based on rules
+        decision_steps = generate_decision_steps(student, prediction, probability)
+        
+        # Generate explanation text
+        explanation_text = generate_explanation(student, prediction, avg_score)
+        
+        # Get feature importance (mock data for now)
+        feature_importance = get_feature_importance(student, prediction)
+        
+        context = {
+            'student': student,
+            'prediction_result': prediction,
+            'confidence': probability * 100,
+            'avg_score': avg_score,
+            'decision_steps': decision_steps,
+            'explanation_text': explanation_text,
+            'feature_importance': feature_importance,
+        }
+        
+        return render(request, 'decision_tree.html', context)
+        
+    except Exception as e:
+        messages.error(request, f"Gagal memuat pohon keputusan: {str(e)}")
+        return redirect('predict_for_student', student_id=student_id)
+
+def generate_decision_steps(student, prediction, probability):
+    """Generate decision steps for visualization"""
+    steps = []
+    avg_score = (student.nilai_mtk + student.nilai_bindo + 
+                student.nilai_bing + student.nilai_ipa) / 4
+    
+    # Step 1: Average Score Analysis
+    if avg_score >= 80:
+        score_tendency = "Tinggi"
+        score_confidence = 85
+    elif avg_score >= 70:
+        score_tendency = "Sedang-Tinggi"  
+        score_confidence = 75
+    else:
+        score_tendency = "Sedang"
+        score_confidence = 65
+        
+    steps.append({
+        'feature': '📊 Analisis Nilai Rata-rata',
+        'condition': f'Rata-rata nilai = {avg_score:.1f} → Kategori {score_tendency}',
+        'result': f'Indikasi awal: {prediction}',
+        'confidence': score_confidence
+    })
+    
+    # Step 2: Subject Strength Analysis
+    subject_scores = {
+        'Matematika': student.nilai_mtk,
+        'B.Indonesia': student.nilai_bindo,
+        'B.Inggris': student.nilai_bing,
+        'IPA': student.nilai_ipa
+    }
+    
+    strongest_subject = max(subject_scores, key=subject_scores.get)
+    strongest_score = subject_scores[strongest_subject]
+    
+    if strongest_subject == 'Matematika' and strongest_score >= 80:
+        subject_tendency = "AKUNTANSI"
+        subject_confidence = 80
+    elif strongest_subject in ['B.Indonesia', 'B.Inggris'] and strongest_score >= 75:
+        subject_tendency = "PERKANTORAN"
+        subject_confidence = 75
+    else:
+        subject_tendency = prediction  # Follow overall prediction
+        subject_confidence = 70
+        
+    steps.append({
+        'feature': '🎯 Analisis Kekuatan Mata Pelajaran',
+        'condition': f'Nilai tertinggi: {strongest_subject} ({strongest_score}) → Mendukung {subject_tendency}',
+        'result': f'Kecenderungan: {subject_tendency}',
+        'confidence': subject_confidence
+    })
+    
+    # Step 3: Interest Analysis
+    interest_mapping = {
+        'Berhitung': 'AKUNTANSI',
+        'Analisis Data': 'AKUNTANSI', 
+        'Keuangan': 'AKUNTANSI',
+        'Administrasi': 'PERKANTORAN',
+        'Komunikasi': 'PERKANTORAN',
+        'Korespodensi': 'PERKANTORAN'
+    }
+    
+    interest_prediction = interest_mapping.get(student.minat, prediction)
+    interest_confidence = 90 if interest_prediction == prediction else 60
+    
+    steps.append({
+        'feature': '💡 Analisis Minat Siswa',
+        'condition': f'Minat "{student.minat}" → Cocok untuk {interest_prediction}',
+        'result': f'Rekomendasi: {interest_prediction}',
+        'confidence': interest_confidence
+    })
+    
+    return steps
+
+def generate_explanation(student, prediction, avg_score):
+    """Generate explanation text for the prediction"""
+    
+    explanations = {
+        'AKUNTANSI': f"""
+        Berdasarkan analisis data siswa {student.name}, sistem merekomendasikan jurusan AKUNTANSI karena:
+        
+        • Rata-rata nilai akademik ({avg_score:.1f}) menunjukkan kemampuan yang baik dalam bidang eksak
+        • Nilai Matematika ({student.nilai_mtk}) mendukung kemampuan berhitung yang diperlukan
+        • Minat "{student.minat}" selaras dengan karakteristik jurusan Akuntansi
+        • Kombinasi nilai IPA ({student.nilai_ipa}) dan kemampuan analisis mendukung keputusan ini
+        
+        Jurusan Akuntansi akan memberikan peluang karir di bidang keuangan, perpajakan, dan manajemen bisnis.
+        """,
+        
+        'PERKANTORAN': f"""
+        Berdasarkan analisis data siswa {student.name}, sistem merekomendasikan jurusan PERKANTORAN karena:
+        
+        • Rata-rata nilai akademik ({avg_score:.1f}) menunjukkan kemampuan yang seimbang
+        • Nilai Bahasa Indonesia ({student.nilai_bindo}) dan Bahasa Inggris ({student.nilai_bing}) mendukung kemampuan komunikasi
+        • Minat "{student.minat}" selaras dengan karakteristik jurusan Perkantoran
+        • Profil akademik menunjukkan kesesuaian dengan kebutuhan administrasi dan manajemen kantor
+        
+        Jurusan Perkantoran akan memberikan peluang karir di bidang administrasi, sekretaris, dan manajemen kantor.
+        """
+    }
+    
+    return explanations.get(prediction, "Analisis tidak tersedia untuk prediksi ini.")
+
+def get_feature_importance(student, prediction):
+    """Get feature importance for visualization (mock implementation)"""
+    
+    # Calculate relative importance based on student data
+    scores = [student.nilai_mtk, student.nilai_bindo, student.nilai_bing, student.nilai_ipa]
+    avg = sum(scores) / len(scores)
+    
+    importance_data = [
+        {
+            'name': 'Nilai Matematika',
+            'importance': abs(student.nilai_mtk - avg) / 100 + 0.3,
+            'importance_percent': min(90, (abs(student.nilai_mtk - avg) / 100 + 0.3) * 100)
+        },
+        {
+            'name': 'Minat Siswa', 
+            'importance': 0.85,
+            'importance_percent': 85
+        },
+        {
+            'name': 'Nilai B.Indonesia',
+            'importance': abs(student.nilai_bindo - avg) / 100 + 0.25,
+            'importance_percent': min(80, (abs(student.nilai_bindo - avg) / 100 + 0.25) * 100)
+        },
+        {
+            'name': 'Nilai B.Inggris',
+            'importance': abs(student.nilai_bing - avg) / 100 + 0.2,
+            'importance_percent': min(75, (abs(student.nilai_bing - avg) / 100 + 0.2) * 100)
+        },
+        {
+            'name': 'Nilai IPA',
+            'importance': abs(student.nilai_ipa - avg) / 100 + 0.15,
+            'importance_percent': min(70, (abs(student.nilai_ipa - avg) / 100 + 0.15) * 100)
+        }
+    ]
+    
+    # Sort by importance
+    importance_data.sort(key=lambda x: x['importance'], reverse=True)
+    
+    return importance_data

@@ -15,5 +15,6 @@ urlpatterns = [
 
     path('train/', views.train_model, name='train_model'),
     path('calculation/<int:student_id>/', views.calculation_details, name='predict_for_student'),
+    path('decision-tree/<int:student_id>/', views.decision_tree_view, name='decision_tree_view'),
     path('results/', views.results, name='results'),
 ]
