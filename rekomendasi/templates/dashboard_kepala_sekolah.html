@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Kepala Sekolah{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>👨‍💼 Dashboard Kepala Sekolah</h2>
+  <p>Selamat datang, <strong>{{ user.get_full_name|default:user.username }}</strong>!</p>
+  <p>Kelola dan pantau sistem rekomendasi jurusan SMK YASPI.</p>
+</div>
+
+<!-- Statistik Overview -->
+<section class="grid-3">
+  <div class="stat">
+    <div class="stat-num">{{ student_count }}</div>
+    <div class="stat-label">Total Siswa</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{{ prediction_count }}</div>
+    <div class="stat-label">Prediksi Dibuat</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num">{% if model_ready %}✅{% else %}❌{% endif %}</div>
+    <div class="stat-label">Status Model</div>
+  </div>
+</section>
+
+<!-- Quick Actions -->
+<div class="card">
+  <h2>🚀 Aksi Cepat</h2>
+  <div class="quick-actions">
+    <a href="{% url 'results' %}" class="action-card results">
+      <div class="action-icon">📊</div>
+      <div class="action-content">
+        <h3>Lihat Hasil Prediksi</h3>
+        <p>Pantau semua hasil prediksi jurusan siswa</p>
+      </div>
+    </a>
+    
+    <a href="{% url 'laporan' %}" class="action-card report">
+      <div class="action-icon">📋</div>
+      <div class="action-content">
+        <h3>Laporan Lengkap</h3>
+        <p>Unduh laporan komprehensif sistem</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- System Status -->
+<div class="card">
+  <h2>⚙️ Status Sistem</h2>
+  <div class="system-status">
+    <div class="status-item">
+      <span class="status-label">Model Decision Tree:</span>
+      <span class="status-value {% if model_ready %}active{% else %}inactive{% endif %}">
+        {% if model_ready %}Aktif & Siap{% else %}Tidak Aktif{% endif %}
+      </span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Database:</span>
+      <span class="status-value active">Terhubung</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Total Data Siswa:</span>
+      <span class="status-value">{{ student_count }} siswa</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Prediksi Terakhir:</span>
+      <span class="status-value">{{ prediction_count }} prediksi</span>
+    </div>
+  </div>
+</div>
+
+<!-- Information -->
+<div class="card">
+  <h2>ℹ️ Informasi Sistem</h2>
+  <div class="info-section">
+    <h3>Tentang Sistem Rekomendasi Jurusan</h3>
+    <p>Sistem ini membantu siswa dalam memilih jurusan yang tepat berdasarkan:</p>
+    <ul>
+      <li><strong>Analisis Nilai Akademik:</strong> Matematika, Bahasa Indonesia, Bahasa Inggris, dan IPA</li>
+      <li><strong>Preferensi Minat:</strong> Bidang yang diminati siswa</li>
+      <li><strong>Algoritma Decision Tree:</strong> Pembelajaran mesin untuk prediksi akurat</li>
+    </ul>
+    
+    <h3>Jurusan yang Tersedia</h3>
+    <div class="majors-info">
+      <div class="major-info akuntansi">
+        <h4>💰 Akuntansi & Keuangan Lembaga</h4>
+        <p>Program keahlian yang fokus pada pencatatan transaksi keuangan, penyusunan laporan keuangan, dan analisis keuangan perusahaan.</p>
+      </div>
+      <div class="major-info perkantoran">
+        <h4>🏢 Manajemen Perkantoran & Layanan Bisnis</h4>
+        <p>Program keahlian yang mempelajari administrasi perkantoran, komunikasi bisnis, dan manajemen layanan pelanggan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Quick Actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid;
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.action-card.results {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.action-card.report {
+  background: #ecfdf5;
+  border-color: #22c55e;
+  color: #166534;
+}
+
+.action-icon {
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.action-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.action-content p {
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+/* System Status */
+.system-status {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.status-value {
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.status-value.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-value.inactive {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Information Section */
+.info-section h3 {
+  color: #1e40af;
+  margin: 1.5rem 0 1rem 0;
+}
+
+.info-section ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.info-section li {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.majors-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.major-info {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid;
+}
+
+.major-info.akuntansi {
+  background: #ecfdf5;
+  border-color: #22c55e;
+}
+
+.major-info.akuntansi h4 {
+  color: #166534;
+  margin: 0 0 0.75rem 0;
+}
+
+.major-info.akuntansi p {
+  color: #166534;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.major-info.perkantoran {
+  background: #fff7ed;
+  border-color: #f59e0b;
+}
+
+.major-info.perkantoran h4 {
+  color: #92400e;
+  margin: 0 0 0.75rem 0;
+}
+
+.major-info.perkantoran p {
+  color: #92400e;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+  
+  .majors-info {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .status-item {
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+}
+</style>
+{% endblock %}

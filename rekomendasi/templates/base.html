@@ -5,6 +5,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}SMK Yaspi • Rekomendasi Jurusan{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    @media print {
+      .topbar, .footer {
+        display: none !important;
+      }
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -13,9 +29,19 @@
       <nav>
         {% if user.is_authenticated %}
           <a href="{% url 'dashboard' %}">Dashboard</a>
-          <a href="{% url 'students_list' %}">Data Siswa</a>
-          <a href="{% url 'train_model' %}">Analisa Metode</a>
-          <a href="{% url 'results' %}">Hasil</a>
+          
+          {% if user.profile.role == 'admin' %}
+            <a href="{% url 'students_list' %}">Data Siswa</a>
+            <a href="{% url 'train_model' %}">Analisa Metode</a>
+            <a href="{% url 'results' %}">Hasil</a>
+            <a href="{% url 'laporan' %}"> Laporan</a>
+          {% elif user.profile.role == 'kepala_sekolah' %}
+            <a href="{% url 'results' %}"> Hasil Prediksi</a>
+            <a href="{% url 'laporan' %}"> Laporan</a>
+          {% elif user.profile.role == 'siswa' %}
+            <a href="{% url 'results' %}"> Hasil Prediksi</a>
+          {% endif %}
+          
           <a href="{% url 'logout' %}">Logout</a>
         {% else %}
           <a href="{% url 'login' %}">Login</a>

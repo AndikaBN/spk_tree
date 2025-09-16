@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Siswa{% endblock %}
+{% block content %}
+
+<div class="card">
+  <h2>📊 Hasil Prediksi Jurusan</h2>
+  <p>Lihat hasil prediksi jurusan yang telah dibuat untuk Anda.</p>
+  
+  <div class="action-buttons">
+    <a href="{% url 'results' %}" class="btn btn-primary">
+      📋 Lihat Hasil Prediksi
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <h2>ℹ️ Tentang Sistem</h2>
+  <p>Sistem ini menggunakan algoritma Decision Tree untuk memprediksi jurusan yang sesuai berdasarkan:</p>
+  <ul>
+    <li><strong>Nilai Akademik:</strong> Matematika, Bahasa Indonesia, Bahasa Inggris, IPA</li>
+    <li><strong>Minat Siswa:</strong> Preferensi bidang yang diminati</li>
+  </ul>
+  
+  <div class="prediction-info">
+    <h3>Jurusan yang Tersedia:</h3>
+    <div class="majors-grid">
+      <div class="major-card akuntansi">
+        <h4>💰 Akuntansi & Keuangan Lembaga</h4>
+        <p>Mempelajari pencatatan keuangan, analisis laporan keuangan, dan manajemen keuangan organisasi.</p>
+      </div>
+      <div class="major-card perkantoran">
+        <h4>🏢 Manajemen Perkantoran & Layanan Bisnis</h4>
+        <p>Mempelajari administrasi perkantoran, komunikasi bisnis, dan manajemen layanan pelanggan.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.student-info {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin: 1.5rem 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.info-item .label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.info-item .value {
+  font-weight: 700;
+  color: #1e40af;
+}
+
+.alert.warning {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.alert.warning h4 {
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.alert.warning p {
+  color: #92400e;
+  margin: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+}
+
+.prediction-info {
+  margin-top: 1.5rem;
+}
+
+.majors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.major-card {
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid;
+  transition: transform 0.3s ease;
+}
+
+.major-card:hover {
+  transform: translateY(-4px);
+}
+
+.major-card.akuntansi {
+  background: #ecfdf5;
+  border-color: #22c55e;
+}
+
+.major-card.akuntansi h4 {
+  color: #166534;
+  margin: 0 0 0.75rem 0;
+}
+
+.major-card.akuntansi p {
+  color: #166534;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.major-card.perkantoran {
+  background: #fff7ed;
+  border-color: #f59e0b;
+}
+
+.major-card.perkantoran h4 {
+  color: #92400e;
+  margin: 0 0 0.75rem 0;
+}
+
+.major-card.perkantoran p {
+  color: #92400e;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .majors-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+</style>
+{% endblock %}

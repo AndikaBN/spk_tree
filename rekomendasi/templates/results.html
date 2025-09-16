@@ -3,24 +3,46 @@
 {% block title %}Hasil Prediksi{% endblock %}
 {% block content %}
 <div class="card">
-  <h2>Hasil Prediksi</h2>
+  {% if user_role == 'siswa' %}
+    <h2> Hasil Prediksi Semua Siswa</h2>
+    <p>Berikut adalah hasil prediksi jurusan untuk semua siswa di sekolah:</p>
+  {% elif user_role == 'kepala_sekolah' %}
+    <h2> Hasil Prediksi Semua Siswa</h2>
+    <p>Laporan lengkap hasil prediksi jurusan untuk semua siswa di sekolah:</p>
+  {% else %}
+    <h2> Hasil Prediksi</h2>
+    <p>Daftar semua hasil prediksi jurusan yang telah dibuat:</p>
+  {% endif %}
+  
   <table class="table">
     <thead>
-      <tr><th>Waktu</th><th>Nama</th><th>NIS</th><th>Jurusan Prediksi</th><th>Prob.</th></tr>
+      <tr>
+        <th>Waktu</th>
+        <th>Nama</th>
+        <th hidden>NIS</th>
+        <th>Jurusan Prediksi</th>
+        <th>Probabilitas</th>
+      </tr>
     </thead>
     <tbody>
       {% for p in predictions %}
       <tr>
         <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
         <td>{{ p.student.name }}</td>
-        <td>{{ p.student.nis }}</td>
+        <td hidden>{{ p.student.nis }}</td>
         <td>{{ p.jurusan_prediksi }}</td>
-        <td>{{ p.probability|floatformat:2 }}</td>
+        <td>{{ p.probability|floatformat:2 }}%</td>
       </tr>
       {% empty %}
-      <tr><td colspan="5">Belum ada hasil prediksi.</td></tr>
+      <tr>
+        <td colspan="5">Belum ada hasil prediksi.</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
+  
+  <div class="results-summary">
+    <p><strong>Total Prediksi:</strong> {{ predictions|length }} hasil</p>
+  </div>
 </div>
 {% endblock %}

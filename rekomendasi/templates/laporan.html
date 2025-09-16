@@ -1,0 +1,662 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Laporan Sistem Rekomendasi Jurusan{% endblock %}
+{% block content %}
+<div class="report-container">
+  <!-- Header Laporan -->
+  <div class="report-header">
+    <div class="school-info">
+      <h1>SMK YASPI BOGOR</h1>
+      <p>Sistem Prediksi Jurusan Berbasis Decision Tree</p>
+      <p class="report-date">Laporan per {{ current_date|date:"d F Y" }}</p>
+    </div>
+  </div>
+
+  <!-- Tabel Data Prediksi -->
+  <div class="predictions-section">
+    <h2>📋 Daftar Hasil Prediksi</h2>
+    <div class="table-container">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Siswa</th>
+            <th>NIS</th>
+            <th>Nilai MTK</th>
+            <th>Nilai B.Indo</th>
+            <th>Nilai B.Ing</th>
+            <th>Nilai IPA</th>
+            <th>Minat</th>
+            <th>Prediksi Jurusan</th>
+            <th>Probabilitas</th>
+            <th>Tanggal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for prediction in predictions %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ prediction.student.name }}</td>
+            <td>{{ prediction.student.nis }}</td>
+            <td>{{ prediction.student.nilai_mtk }}</td>
+            <td>{{ prediction.student.nilai_bindo }}</td>
+            <td>{{ prediction.student.nilai_bing }}</td>
+            <td>{{ prediction.student.nilai_ipa }}</td>
+            <td>{{ prediction.student.minat }}</td>
+            <td class="prediction-result {{ prediction.jurusan_prediksi|lower }}">
+              {{ prediction.jurusan_prediksi }}
+            </td>
+            <td>{{ prediction.probability|floatformat:1 }}%</td>
+            <td>{{ prediction.created_at|date:"d/m/Y" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="no-data">Belum ada data prediksi yang tersedia</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Analisis Model -->
+  <div class="analysis-section">
+    <h2>🔍 Analisis Model Decision Tree</h2>
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <h3>Feature Importance</h3>
+        <div class="feature-list">
+          {% for feature in feature_importance %}
+          <div class="feature-item">
+            <span class="feature-name">{{ feature.name }}</span>
+            <div class="importance-bar">
+              <div class="importance-fill" data-width="{{ feature.importance_percentage }}"></div>
+            </div>
+            <span class="importance-value">{{ feature.importance|floatformat:3 }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="analysis-card">
+        <h3>Performa Model</h3>
+        <div class="performance-metrics">
+          <div class="metric">
+            <span class="metric-label">Akurasi Training:</span>
+            <span class="metric-value">{{ training_accuracy }}%</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Jumlah Node:</span>
+            <span class="metric-value">{{ tree_nodes }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Kedalaman Tree:</span>
+            <span class="metric-value">{{ tree_depth }}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Tanggal Training:</span>
+            <span class="metric-value">{{ last_training_date|date:"d/m/Y H:i" }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Laporan -->
+  <div class="report-footer">
+    <div class="footer-info">
+      <p><strong>Sistem Rekomendasi Jurusan SMK YASPI</strong></p>
+      <p>Menggunakan algoritma Decision Tree untuk prediksi jurusan berdasarkan nilai akademik dan minat siswa</p>
+      <p class="generated-info">Laporan dibuat pada: {{ current_date|date:"d F Y H:i" }} WIB</p>
+    </div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="print-section no-print">
+    <button onclick="window.print()" class="print-btn">
+      🖨️ Cetak Laporan
+    </button>
+    <a href="{% url 'dashboard' %}" class="back-btn">
+      ← Kembali ke Dashboard
+    </a>
+  </div>
+</div>
+
+<style>
+/* Global Report Styles */
+.report-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+}
+
+/* Header Section */
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid #2563eb;
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.school-info h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #1e40af;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.school-info p {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin: 0.25rem 0;
+}
+
+.report-date {
+  font-weight: 600;
+  color: #059669 !important;
+}
+
+.report-logo .logo-placeholder {
+  font-size: 4rem;
+  color: #2563eb;
+  text-align: center;
+}
+
+/* Summary Statistics */
+.summary-section {
+  margin-bottom: 2.5rem;
+}
+
+.summary-section h2 {
+  font-size: 1.8rem;
+  color: #1e40af;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #1e40af;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Distribution Section */
+.distribution-section {
+  margin-bottom: 2.5rem;
+}
+
+.distribution-section h2 {
+  font-size: 1.8rem;
+  color: #1e40af;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+}
+
+.distribution-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.distribution-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.distribution-item h3 {
+  margin: 0 0 1rem 0;
+  color: #1e40af;
+  font-size: 1.2rem;
+}
+
+.distribution-bar {
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 1s ease;
+  border-radius: 12px;
+  width: 0;
+}
+
+.bar-fill.akuntansi {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.bar-fill.perkantoran {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.distribution-stats {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.count {
+  color: #64748b;
+}
+
+.percentage {
+  color: #1e40af;
+  font-size: 1.1rem;
+}
+
+/* Predictions Table */
+.predictions-section {
+  margin-bottom: 2.5rem;
+}
+
+.predictions-section h2 {
+  font-size: 1.8rem;
+  color: #1e40af;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+}
+
+.table-container {
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.report-table th {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white;
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.report-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #374151;
+}
+
+.report-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.prediction-result {
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.prediction-result.akuntansi {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.prediction-result.administrasi {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.prediction-result.perkantoran {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.no-data {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 2rem !important;
+}
+
+/* Analysis Section */
+.analysis-section {
+  margin-bottom: 2.5rem;
+}
+
+.analysis-section h2 {
+  font-size: 1.8rem;
+  color: #1e40af;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.analysis-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.analysis-card h3 {
+  margin: 0 0 1rem 0;
+  color: #1e40af;
+  font-size: 1.2rem;
+}
+
+.feature-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.feature-name {
+  min-width: 120px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.importance-bar {
+  flex: 1;
+  height: 16px;
+  background: #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.importance-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  transition: width 1s ease;
+  width: 0;
+}
+
+.importance-value {
+  min-width: 60px;
+  text-align: right;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: #1e40af;
+}
+
+.performance-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.metric-label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.metric-value {
+  font-weight: 700;
+  color: #1e40af;
+}
+
+/* Footer */
+.report-footer {
+  border-top: 2px solid #e2e8f0;
+  padding-top: 1.5rem;
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.footer-info p {
+  margin: 0.25rem 0;
+  color: #64748b;
+}
+
+.generated-info {
+  font-size: 0.9rem;
+  color: #94a3b8 !important;
+  font-style: italic;
+}
+
+/* Print Controls */
+.print-section {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.print-btn,
+.back-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.print-btn {
+  background: #059669;
+  color: white;
+}
+
+.print-btn:hover {
+  background: #047857;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(5, 150, 105, 0.3);
+}
+
+.back-btn {
+  background: #64748b;
+  color: white;
+}
+
+.back-btn:hover {
+  background: #475569;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(100, 116, 139, 0.3);
+}
+
+/* Print Styles */
+@media print {
+  .no-print { display: none !important; }
+
+  /* kontrol ukuran halaman & margin */
+  @page { size: A4; margin: 10mm; }
+
+  .report-container { padding: 0; max-width: none; box-shadow: none; }
+
+  .report-header { margin-bottom: .75rem; padding-bottom: .75rem; }
+  .school-info h1 { font-size: 2rem; }
+
+  /* JANGAN paksa page break di awal tabel */
+  .predictions-section {
+    page-break-before: auto !important; /* legacy property */
+    break-before: auto !important;      /* modern property */
+    margin-top: .75rem;
+  }
+
+  /* Perketat spacing agar muat satu lembar */
+  .analysis-grid { grid-template-columns: 1fr; gap: .75rem; }
+  .report-table { font-size: .8rem; }
+  .report-table th, .report-table td { padding: .4rem .25rem; }
+
+  /* Hindari pecah di dalam kartu, tapi jangan berlebihan */
+  .stat-card, .analysis-card, .distribution-item { page-break-inside: avoid; }
+
+  /* (opsional) kecilkan margin footer */
+  .report-footer { margin-top: 1rem; padding-top: 1rem; }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .report-container {
+    padding: 1rem;
+  }
+
+  .report-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .school-info h1 {
+    font-size: 2rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .print-section {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .report-table {
+    font-size: 0.8rem;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  /* Hide less important columns on mobile */
+  .report-table th:nth-child(4),
+  .report-table th:nth-child(5),
+  .report-table th:nth-child(6),
+  .report-table th:nth-child(7),
+  .report-table td:nth-child(4),
+  .report-table td:nth-child(5),
+  .report-table td:nth-child(6),
+  .report-table td:nth-child(7) {
+    display: none;
+  }
+}
+
+/* Animation */
+.report-container {
+  animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+
+<script>
+// Enhanced print functionality and animations
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate bars on load
+    setTimeout(() => {
+        const barFills = document.querySelectorAll('.bar-fill[data-width]');
+        barFills.forEach(bar => {
+            const width = bar.getAttribute('data-width');
+            bar.style.width = width + '%';
+        });
+        
+        const importanceFills = document.querySelectorAll('.importance-fill[data-width]');
+        importanceFills.forEach(bar => {
+            const width = bar.getAttribute('data-width');
+            bar.style.width = width + '%';
+        });
+    }, 500);
+    
+    // Add print-specific styling
+    const printStyles = document.createElement('style');
+    printStyles.media = 'print';
+    printStyles.innerHTML = `
+        body { font-size: 12pt; }
+        .report-table { font-size: 10pt; }
+        .school-info h1 { font-size: 18pt; }
+        .summary-section h2,
+        .distribution-section h2,
+        .predictions-section h2,
+        .analysis-section h2 { font-size: 14pt; }
+    `;
+    document.head.appendChild(printStyles);
+});
+
+// Print event handler
+window.addEventListener('beforeprint', function() {
+    document.title = 'Laporan Sistem Rekomendasi Jurusan - SMK YASPI';
+});
+
+window.addEventListener('afterprint', function() {
+    document.title = 'Laporan Sistem Rekomendasi Jurusan';
+});
+</script>
+{% endblock %}
